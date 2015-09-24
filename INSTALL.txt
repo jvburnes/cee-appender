@@ -1,0 +1,84 @@
+CEE EVENT LOG TEST RIG INSTALL GUIDE
+
+This test rig is intended to allow experimentation in centralized structured event logging.
+
+CORE COMPONENTS
+
+The core components are:
+
+- AMQP Log Appender for Python
+- RabbitMQ AMQP Message Exchange Broker for pubsub, relay and message routing
+- LogStash as aggregator, filter and protocol translator to the Event DB / Backend
+- ElasticSearch as the real-time event search and reporting tool
+
+INSTALLATION AND CONFIGURATION
+
+1. The AMQPAppender module for Python is contained in the AMQPAppendTest.py file.   It uses CEE event objects
+from ceeEvent.py and ceeFields.py.  To emit a sample test stream all you have to do is run the
+AMQPAppendTest.py file.
+
+No actual configuration work needs to be performed for the AMQPAppendTest.py file.  If you need to change
+ports etc, the details are in the source files.  When AMQPAppendTest.py is run it will create the RabbitMQ
+structures that it needs. (The named exchange should be created as 'org.log.topics')
+
+2. RabbitMQ is the message router / exchange for AMQP packets.   Download and install it according to the
+included documentation.   All other log streaminng components use the default RabbitMQ TCP port and 
+credentials. Start RabbitMQ as indicated in the instructions. 
+
+3. LogStash can be downloaded from it's main web site.  Follow the directions in order to install.  
+Configuring LogStash is relatively painless as the configuration file is included.  When LogStash
+starts up it will need to connect to the already created exchange and will bind to the "logger-listen-topic"
+queue.
+
+4. ElasticSearch can be downloaded from its main web site.  Do that and follow the install instructions.
+Run ElasticSearch as indicated in its install instructions.
+
+5. Review the logstash/indexer.conf file and verify the connection strings, ports, protocols etc.
+
+6. You should now be familiar with the AMQPAppendTest.py script and RabbitMQ and ElasticSearch should be
+running.
+
+7. Connect to the RabbitMQ web user interface at http://localhost:55672.  If challenged for authentication,
+use guest/guest.  Once logged in, select "Queues" and then "Add a new queue".  Create the new queue with
+the following properties:
+
+Name: logger-listen-topic
+Durability: Durable
+Auto delete: No
+
+Leave the rest blank or default.
+
+8. To start the rest of the event logging chain simply execute the 'runbackend.sh' script. This will start
+LogStash and connect the message router (RabbitMQ) to the backend (ElasticSearch).
+
+TESTING THE RIG
+
+If you installed and started all of the components on the same machine, you should be ready to run the log
+event tests.
+
+A. The AMQPAppendTest.py script can now be run from a different shell than you started the 'runbackend.sh'
+script in.  LogStash as configured has debug tracing enabled on both the input (AMQP) and output (Elastic).
+
+B. After you run AMQPAppendTest.py, you should be able to view the JSON event messages as well as other
+meta information regarding the event as it was processed by LogStash.
+
+C. The runbackend.sh script starts both LogStash's "indexing agent" and its "Web UI".  To verify that your
+events are stored in ElasticSearch, connect to the LogStash Web UI on http://localhost:9292.  It will tell 
+you that you haven't included a query.  Select the link to query all of the events.  You can select an
+event that's been returned and LogStash will show you detailed event fields which you can use to further
+specify the set of events you wish to see.
+
+D. Remember that the query interface in ElasticSearch/LogStash can access JSON object attributes using 
+JSON syntax, so the 'id' field within the CEE event would be written as 'Event.id'.
+
+Click on the Lucene "docs" link to read more about the Lucene query language used by LogStash.
+
+If you wish to perform REST programmatic searches on ElasticSearch, please reference the documentation
+included with ElasticSearch as well as the docs available on the ElasticSearch web site.
+
+
+
+
+
+
+
